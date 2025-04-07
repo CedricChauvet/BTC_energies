@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-cluster-hello-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: rag-cluster-hello
+  template:
+    metadata:
+      labels:
+        app: rag-cluster-hello
+    spec:
+      containers:
+      - name: rag-container
+        image: europe-west9-docker.pkg.dev/btc-chatbot-pro/repo-chatbot/rubie-pro-v1:latest
+        resources:
+          requests:
+            memory: "8Gi"
+            cpu: "2"
+          limits:
+            memory: "16Gi"
+            cpu: "4"
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-cluster-hello-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: rag-cluster-hello
+  ports:
+  - port: 80
+    targetPort: 8080
