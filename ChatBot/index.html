@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rubie - Pro v1</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+          
+            background-size: cover;
+        }
+        .container {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 20px;
+            background-image: url('mosaic.jpg');
+            border-radius:  30px;
+        }
+        
+        /* Modifié: Positionnement des drapeaux en bas à droite */
+        .flags-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            max-width: 200px;
+            justify-content: flex-end;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #response {
+            white-space: pre-wrap;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            min-height: 100px;
+        }
+        /* Styles pour le Markdown */
+        .markdown h1, .markdown h2, .markdown h3 {
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+            font-size: 1.5rem; /* Taille uniforme pour tous les en-têtes */
+        }
+        .markdown p {
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+        }
+        .markdown ul, .markdown ol {
+            margin-left: 1.5em;
+        }
+        .markdown pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .markdown code {
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        /* Contrôles d'affichage */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .display-options {
+            display: flex;
+            align-items: center;
+        }
+        .display-options label {
+            margin-right: 10px;
+        }
+        h1 {
+            text-align: center; /* Centre le contenu du h1 */
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Centre horizontalement les éléments flex */
+            gap: 15px; /* Espace entre l'image et le texte */
+        }
+        
+        h1 img {
+            max-height: 100px; /* Ajustez selon vos besoins */
+            vertical-align: middle;
+        }
+        
+        /* Modifié: Style des boutons de drapeaux */
+        .flag-button {
+            padding: 5px;
+            background-color: transparent;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .flag-button:hover {
+            background-color: rgba(69, 160, 73, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .flag-button.pressed {
+            background-color: rgba(62, 142, 65, 0.3);
+            transform: scale(0.95);
+        }
+        
+        .drapeau {
+            width: 30px;
+            height: 30px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>
+        Rubie - Pro
+        <img src="/Rubie_portrait.png" alt="Portrait de Rubie">
+    </h1>
+    <div class="container">
+        <h2>Posez votre question</h2>
+        <textarea id="prompt" placeholder="Je suis Rubie, La Chief Happiness Officer de BTC Energies
+
+En quoi puis-je vous aider?"></textarea>
+        <div class="controls">
+            <button onclick="generateResponse()">Générer</button>
+        </div>
+        <div id="response"></div>
+    </div>
+
+    <h5>Attention cette version peut contenir des elements privés tels que numero de telephone, données financieres et autres informations sensibles &#128054;</h5>
+    
+
+    <!-- Nouveau conteneur pour les drapeaux en bas à droite -->
+    <div class="flags-container" id="flags-container">
+        <!-- Les drapeaux seront ajoutés ici par JavaScript -->
+    </div>
+    
+
+    <!-- Inclure la bibliothèque Marked.js pour parser le Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script>    
+        async function generateResponse() {
+        const prompt = document.getElementById('prompt').value;
+        const responseElement = document.getElementById('response');
+        
+        // Obtenir le pays sélectionné (ou FR par défaut)
+        let language = 'FR';
+        const selectedFlag = document.querySelector('.flag-button.pressed');
+        if (selectedFlag) {
+            // Extraire le code du pays à partir du nom du fichier d'image
+            const imgSrc = selectedFlag.querySelector('img').src;
+            const imgFilename = imgSrc.split('/').pop();
+            language = imgFilename.split('.')[0]; // Get the country code from filename (e.g., "FR.png" -> "FR")
+        }
+        
+        if (!prompt) {
+            responseElement.textContent = "Veuillez entrer un prompt";
+            return;
+        }
+        
+        responseElement.textContent = "Génération en cours...";
+        
+        try {
+            const response = await fetch('/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ prompt, language }),
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                displayResponse(data.response);
+            } else {
+                responseElement.textContent = "Erreur: " + (data.error || "Une erreur est survenue");
+            }
+        } catch (error) {
+            responseElement.textContent = "Erreur de connexion: " + error.message;
+        }
+    }
+
+
+        function displayResponse(text) {
+            // Déclarer responseElement pour accéder à l'élément DOM
+            const responseElement = document.getElementById('response');
+            
+            // Utiliser Marked.js pour parser le Markdown
+            responseElement.innerHTML = marked.parse(text);
+            responseElement.classList.add('markdown');
+        }
+        // Fonction pour ajouter les drapeaux en bas à droite avec sélection exclusive
+        function setupFlags() {
+            const container = document.getElementById('flags-container');
+            const titleElement = document.querySelector('h1'); // Sélectionne l'élément h1
+            const originalTitle = titleElement.innerHTML; // Sauvegarde le titre original
+            
+            // Liste des drapeaux et pays à utiliser
+            const pays = [
+                { code: "FR", nom: "France" },
+                { code: "ES", nom: "Espagne" },
+                { code: "IT", nom: "Italie" },
+                { code: "DE", nom: "Allemagne" },
+                { code: "GB", nom: "R-U" },
+                { code: "JP", nom: "Japon" },
+                { code: "Suiss", nom: "Suisse" }
+            ];
+            
+            // Variable pour stocker le bouton actuellement sélectionné
+            let boutonSelectionne = null;
+            
+            // Fonction pour mettre à jour le titre avec le pays sélectionné
+            function updateTitle(paysNom = null) {
+                if (paysNom) {
+                    // Si un pays est sélectionné, l'ajouter au titre
+                    titleElement.innerHTML = `${originalTitle} <span style="color: #4285f4; margin-left: 10px;">(${paysNom})</span>`;
+                } else {
+                    // Si aucun pays n'est sélectionné, revenir au titre original
+                    titleElement.innerHTML = `${originalTitle} <span style="color: #4285f4; margin-left: 10px;">(France)</span>`
+                }
+            }
+            
+            for (let i = 0; i < pays.length; i++) {
+                // Création du bouton
+                const bouton = document.createElement('button');
+                bouton.className = 'flag-button';
+                bouton.dataset.pays = pays[i].nom; // Stocker le nom du pays comme attribut data
+                
+                // Création de l'image du drapeau
+                const drapeauImg = document.createElement('img');
+                drapeauImg.className = 'drapeau';
+                
+                drapeauImg.src = `./flags/${pays[i].code}.png`;
+                drapeauImg.alt = `Drapeau ${pays[i].nom}`;
+                
+                bouton.appendChild(drapeauImg);
+                
+                // Ajout des gestionnaires d'événements pour le bouton
+                bouton.addEventListener('click', function() {
+                    const paysNom = this.dataset.pays; // Récupérer le nom du pays depuis l'attribut data
+                    
+                    // Si un bouton était déjà sélectionné, le désélectionner
+                    if (boutonSelectionne && boutonSelectionne !== this) {
+                        boutonSelectionne.classList.remove('pressed');
+                    }
+                    
+                    // Si ce bouton n'était pas sélectionné, le sélectionner
+                    if (this !== boutonSelectionne) {
+                        this.classList.add('pressed');
+                        boutonSelectionne = this;
+                        
+                        // Mettre à jour le titre avec le pays sélectionné
+                        updateTitle(paysNom);
+                        
+                        // Afficher un message dans la console
+                        console.log(`Bouton ${paysNom} activé`);
+                        
+                        // Afficher quel pays a été sélectionné
+                        // alert(`${paysNom} sélectionné`);
+                    } 
+                    // Si ce bouton était déjà sélectionné, le désélectionner
+                    else {
+                        this.classList.remove('pressed');
+                        boutonSelectionne = null;
+                        
+                        // Réinitialiser le titre
+                        updateTitle();
+                        
+                        // Afficher un message dans la console
+                        console.log(`Bouton ${paysNom} désactivé`);
+                        
+                        // Afficher quel pays a été désélectionné
+                        // alert(`${paysNom} désélectionné`);
+                    }
+                });
+                
+                // Ajout du bouton au container
+                container.appendChild(bouton);
+            }
+        }
+
+        // Initialiser les drapeaux lorsque la page est chargée
+        document.addEventListener('DOMContentLoaded', setupFlags);    
+    </script>
+</body>
+</html>

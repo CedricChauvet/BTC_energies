@@ -1,0 +1,6 @@
+// filters non-essential files from the repository.
+// (e.g. build files, temporary files, etc.)
+// no files are ignored at the moment
+# Ignore build files
+cache/
+paraphrase-multilingual-mpnet-base-v2/
